@@ -47,10 +47,23 @@ class WeeklyReviewScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _SectionCard(
-              title: '気分平均',
-              child: Text(
-                count == 0 ? '記録なし' : average.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.displaySmall,
+              title: 'サマリー',
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _MetricTile(
+                      label: '平均',
+                      value: count == 0 ? '--' : average.toStringAsFixed(1),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MetricTile(
+                      label: '記録数',
+                      value: count == 0 ? '0件' : '$count件',
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -61,7 +74,10 @@ class WeeklyReviewScreen extends StatelessWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: topTags.take(3).map((entry) {
-                        return Text('${entry.key} (${entry.value}回)');
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text('${entry.key} (${entry.value}回)'),
+                        );
                       }).toList(),
                     ),
             ),
@@ -164,6 +180,38 @@ class _SectionCard extends StatelessWidget {
             child,
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ],
       ),
     );
   }
