@@ -1,8 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
-import '../models/mood_entry.dart';
 import '../services/app_lock_service.dart';
 import '../services/app_settings.dart';
 import '../services/mood_repository.dart';
@@ -27,7 +23,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationEnabled = false;
-  bool _exporting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +33,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           '設定',
           style: Theme.of(context).textTheme.titleLarge,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // ── セキュリティ ──
+        _sectionHeader('セキュリティ'),
         Card(
           elevation: 0,
           child: ValueListenableBuilder<bool>(
@@ -53,33 +51,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // ── プライバシー ──
+        _sectionHeader('プライバシー'),
         Card(
           elevation: 0,
           child: ListTile(
-            title: const Text('CSVエクスポート'),
-            subtitle: const Text('記録をCSVで共有します。'),
-            trailing: _exporting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.share),
-            onTap: _exporting ? null : _exportCsv,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          elevation: 0,
-          child: ListTile(
-            title: const Text('サブスクのご案内'),
-            subtitle: const Text('有料版の内容を確認できます。'),
+            title: const Text('データの保存場所'),
+            subtitle: const Text('すべてのデータはこの端末にのみ保存されます'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: widget.onOpenPaywall,
+            onTap: () => _showDataLocationDialog(context),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // ── 通知 ──
+        _sectionHeader('通知'),
         Card(
           elevation: 0,
           child: SwitchListTile(
@@ -93,17 +81,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // ── サポート ──
+        _sectionHeader('サポート'),
         Card(
           elevation: 0,
-          child: ListTile(
-            title: const Text('データをすべて削除'),
-            subtitle: const Text('履歴が全て消えます。'),
-            trailing: const Icon(Icons.delete_outline),
-            onTap: () => _confirmClear(context),
+          child: Column(
+            children: [
+              ListTile(
+                title: const Text('プレミアム（構想）'),
+                subtitle: const Text('現在は無料。将来の有料プラン案内のダミーです。'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: widget.onOpenPaywall,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('データをすべて削除'),
+                subtitle: const Text('履歴が全て消えます。'),
+                trailing: const Icon(Icons.delete_outline),
+                onTap: () => _confirmClear(context),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // ── このアプリについて ──
+        _sectionHeader('このアプリについて'),
         Card(
           elevation: 0,
           child: Padding(
@@ -116,6 +121,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 0, 6),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+      ),
+    );
+  }
+
+  Future<void> _showDataLocationDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('データの保存場所'),
+          content: const Text(
+            'すべての気分記録データは、'
+            'あなたのスマートフォンの'
+            '内部ストレージにのみ保存されます。\n\n'
+            '・クラウドへの送信: なし\n'
+            '・外部サーバーへの通信: なし\n'
+            '・ネット接続なしで使用可能: ✓\n\n'
+            'データの削除は「データをすべて削除」から行えます。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -149,63 +192,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     await widget.settings.setLockEnabled(true);
-  }
-
-  Future<void> _exportCsv() async {
-    setState(() {
-      _exporting = true;
-    });
-    try {
-      final entries = widget.repository.entries.value;
-      if (entries.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('エクスポートするデータがありません')),
-          );
-        }
-        return;
-      }
-
-      final csv = _buildCsv(entries);
-      final bytes = utf8.encode(csv);
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            bytes,
-            mimeType: 'text/csv',
-            name: 'tensec_mood.csv',
-          ),
-        ],
-        text: 'TenSec Moodの記録',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _exporting = false;
-        });
-      }
-    }
-  }
-
-  String _buildCsv(List<MoodEntry> entries) {
-    final buffer = StringBuffer();
-    buffer.writeln('timestamp,moodLevel,tag,note');
-    for (final entry in entries) {
-      buffer.writeln(
-        [
-          _csvValue(entry.timestamp.toIso8601String()),
-          entry.moodLevel.toString(),
-          _csvValue(entry.tag),
-          _csvValue(entry.note),
-        ].join(','),
-      );
-    }
-    return buffer.toString();
-  }
-
-  String _csvValue(String? value) {
-    final sanitized = (value ?? '').replaceAll('"', '""');
-    return '"$sanitized"';
   }
 
   Future<void> _confirmClear(BuildContext context) async {

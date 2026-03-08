@@ -36,6 +36,30 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _showPrivacyDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('プライバシーについて'),
+          content: const Text(
+            'TenSec Mood に記録したデータは、'
+            'すべてあなたのスマートフォンの中にのみ保存されます。\n\n'
+            'クラウドへの送信、外部サーバーへの通信は'
+            '一切行っておりません。\n'
+            'インターネットに接続していなくても使用できます。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _saveEntry() async {
     final note = _noteController.text.trim();
     final entry = MoodEntry(
@@ -66,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          '10秒で気分を記録',
+          '今日はどうだった？',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -117,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '原因タグ (任意)',
+                      'きっかけタグ（任意）',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     TextButton(
@@ -157,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   maxLength: 80,
                   maxLines: 1,
                   decoration: const InputDecoration(
-                    hintText: '例）少し疲れた',
+                    hintText: '例）友達と話して楽しかった',
                     border: OutlineInputBorder(),
                     counterText: '',
                   ),
@@ -171,9 +195,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '気が向いた時だけでOKです。',
-                  style: Theme.of(context).textTheme.bodySmall,
+                GestureDetector(
+                  onTap: () => _showPrivacyDialog(context),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lock_outline,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'データはこの端末にだけ保存されます 🔒',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

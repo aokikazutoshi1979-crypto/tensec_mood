@@ -1,30 +1,42 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:tensec_mood/main.dart';
+import 'package:hive/hive.dart';
+import 'package:tensec_mood/screens/home_screen.dart';
+import 'package:tensec_mood/services/mood_repository.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  late Directory tempDir;
+  late Box<Map> box;
+  late MoodRepository repository;
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  setUpAll(() async {
+    tempDir = await Directory.systemTemp.createTemp('tensec_mood_test_');
+    Hive.init(tempDir.path);
+    box = await Hive.openBox<Map>('mood_entries_test');
+    repository = MoodRepository(box);
+    await repository.loadEntries();
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  tearDownAll(() async {
+    await box.clear();
+    await box.close();
+    await Hive.deleteBoxFromDisk('mood_entries_test');
+    await tempDir.delete(recursive: true);
+  });
+
+  testWidgets('Home screen shows core UI', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(repository: repository),
+      ),
+    );
+
+    expect(find.text('10秒で気分を記録'), findsOneWidget);
+    expect(find.text('原因タグ (任意)'), findsOneWidget);
+    expect(find.text('保存する'), findsOneWidget);
   });
 }

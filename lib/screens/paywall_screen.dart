@@ -6,10 +6,30 @@ class PaywallScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('TenSec Mood プレミアム')),
+      appBar: AppBar(title: const Text('TenSec Mood プレミアム（構想）')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Card(
+            elevation: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'この画面はダミーです',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '現在は購入できません。将来の有料化を検討中で、内容と価格は仮の表示です。',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
             '無料でできること',
             style: Theme.of(context).textTheme.titleMedium,
@@ -40,20 +60,20 @@ class PaywallScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'プラン (ダミー)',
+                    'プラン（仮・購入不可）',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '月額 ¥480 / 年額 ¥3,800',
+                    '月額 ¥480 / 年額 ¥3,800（仮）',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () {},
-                      child: const Text('購入する (準備中)'),
+                      onPressed: null,
+                      child: const Text('購入はまだできません'),
                     ),
                   ),
                 ],
@@ -68,19 +88,21 @@ class PaywallScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Text('課金の透明性'),
+                  Text('課金に関する説明（将来の表示例）'),
                   SizedBox(height: 8),
-                  Text('・サブスクリプションは自動更新です。'),
-                  Text('・期間終了の24時間前までに解約しない限り更新されます。'),
-                  Text('・次回更新日は購入日から期間を加算した日です。'),
-                  Text('・解約はApp Storeのサブスク管理から行えます。'),
+                  Text('※ 現時点では購入・課金は一切ありません。'),
+                  SizedBox(height: 8),
+                  Text('・例）サブスクリプションは自動更新です。'),
+                  Text('・例）期間終了の24時間前までに解約しない限り更新されます。'),
+                  Text('・例）次回更新日は購入日から期間を加算した日です。'),
+                  Text('・例）解約はApp Storeのサブスク管理から行えます。'),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '※ これはPaywall画面のモックです。購入処理はまだ実装されていません。',
+            '※ これはPaywall画面のモックです。現在は無料で、購入処理は実装されていません。',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

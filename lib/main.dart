@@ -78,12 +78,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _isLocked = false;
   bool _authInProgress = false;
+  bool _needsLock = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.settings.lockEnabled.addListener(_handleLockChange);
+    _needsLock = widget.settings.lockEnabled.value;
     _evaluateInitialLock();
   }
 
@@ -96,9 +98,20 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
-        widget.settings.lockEnabled.value) {
-      _lockAndAuthenticate();
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (widget.settings.lockEnabled.value && _needsLock) {
+          _lockAndAuthenticate();
+        }
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        if (widget.settings.lockEnabled.value && !_authInProgress) {
+          _needsLock = true;
+        }
+        break;
     }
   }
 
@@ -107,16 +120,19 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       return;
     }
     if (widget.settings.lockEnabled.value) {
+      _needsLock = true;
       _lockAndAuthenticate();
     } else {
       setState(() {
         _isLocked = false;
       });
+      _needsLock = false;
     }
   }
 
   Future<void> _evaluateInitialLock() async {
     if (widget.settings.lockEnabled.value) {
+      _needsLock = true;
       await _lockAndAuthenticate();
     }
   }
@@ -149,6 +165,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       setState(() {
         _isLocked = false;
       });
+      _needsLock = false;
     }
     _authInProgress = false;
   }
