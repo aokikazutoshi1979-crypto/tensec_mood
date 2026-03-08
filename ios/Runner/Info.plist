@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>アプリのロック解除にFace IDを使用します。</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>毎日の気分記録をお知らせします。</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

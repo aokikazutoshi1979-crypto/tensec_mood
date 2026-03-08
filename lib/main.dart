@@ -8,6 +8,7 @@ import 'screens/weekly_review_screen.dart';
 import 'services/app_lock_service.dart';
 import 'services/app_settings.dart';
 import 'services/mood_repository.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,14 @@ Future<void> main() async {
 
   final settings = AppSettings(settingsBox);
   final lockService = AppLockService();
+
+  await NotificationService.initialize();
+  if (settings.notificationEnabled) {
+    await NotificationService.scheduleDailyReminder(
+      hour: settings.notificationHour,
+      minute: settings.notificationMinute,
+    );
+  }
 
   runApp(TensecMoodApp(
     repository: repository,
@@ -87,12 +96,28 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     widget.settings.lockEnabled.addListener(_handleLockChange);
     _needsLock = widget.settings.lockEnabled.value;
     _evaluateInitialLock();
+    NotificationService.onNotificationTap = _navigateToHome;
+    _checkNotificationLaunch();
+  }
+
+  void _navigateToHome() {
+    if (mounted) {
+      setState(() => _currentIndex = 0);
+    }
+  }
+
+  Future<void> _checkNotificationLaunch() async {
+    final launched = await NotificationService.didLaunchFromNotification();
+    if (launched && mounted) {
+      setState(() => _currentIndex = 0);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.settings.lockEnabled.removeListener(_handleLockChange);
+    NotificationService.onNotificationTap = null;
     super.dispose();
   }
 

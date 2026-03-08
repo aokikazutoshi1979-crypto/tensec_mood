@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_lock_service.dart';
 import '../services/app_settings.dart';
 import '../services/mood_repository.dart';
+import '../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -22,7 +23,17 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationEnabled = false;
+  late bool _notificationEnabled;
+  late int _notificationHour;
+  late int _notificationMinute;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationEnabled = widget.settings.notificationEnabled;
+    _notificationHour = widget.settings.notificationHour;
+    _notificationMinute = widget.settings.notificationMinute;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,15 +81,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _sectionHeader('通知'),
         Card(
           elevation: 0,
-          child: SwitchListTile(
-            title: const Text('リマインダー通知 (準備中)'),
-            subtitle: const Text('Phase1では通知は送信しません。'),
-            value: _notificationEnabled,
-            onChanged: (value) {
-              setState(() {
-                _notificationEnabled = value;
-              });
-            },
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('リマインダー通知'),
+                subtitle: const Text('毎日、記録のお知らせを送ります。'),
+                value: _notificationEnabled,
+                onChanged: _toggleNotification,
+              ),
+              if (_notificationEnabled) ...[
+                const Divider(height: 1),
+                ListTile(
+                  title: const Text('通知時刻'),
+                  subtitle: Text(
+                    _formatTime(_notificationHour, _notificationMinute),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _pickTime,
+                ),
+              ],
+            ],
           ),
         ),
         const SizedBox(height: 16),
@@ -162,6 +184,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  String _formatTime(int hour, int minute) {
+    final period = hour < 12 ? '午前' : '午後';
+    final h = hour == 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    final m = minute.toString().padLeft(2, '0');
+    return '$period $h:$m';
+  }
+
+  Future<void> _toggleNotification(bool value) async {
+    if (value) {
+      final granted = await NotificationService.requestPermission();
+      if (!granted) return;
+      await widget.settings.setNotification(
+        enabled: true,
+        hour: _notificationHour,
+        minute: _notificationMinute,
+      );
+      await NotificationService.scheduleDailyReminder(
+        hour: _notificationHour,
+        minute: _notificationMinute,
+      );
+    } else {
+      await widget.settings.setNotification(enabled: false);
+      await NotificationService.cancelReminder();
+    }
+    if (mounted) {
+      setState(() => _notificationEnabled = value);
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _notificationHour, minute: _notificationMinute),
+    );
+    if (picked == null || !mounted) return;
+    await widget.settings.setNotification(
+      enabled: true,
+      hour: picked.hour,
+      minute: picked.minute,
+    );
+    await NotificationService.scheduleDailyReminder(
+      hour: picked.hour,
+      minute: picked.minute,
+    );
+    setState(() {
+      _notificationHour = picked.hour;
+      _notificationMinute = picked.minute;
+    });
+  }
+
   Future<void> _toggleLock(bool value) async {
     if (!value) {
       await widget.settings.setLockEnabled(false);
@@ -195,6 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _confirmClear(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -219,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('データを削除しました')),
       );
     }
