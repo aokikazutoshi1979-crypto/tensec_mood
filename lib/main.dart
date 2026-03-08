@@ -175,7 +175,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     final screens = [
       HomeScreen(repository: widget.repository),
       HistoryScreen(repository: widget.repository),
-      WeeklyReviewScreen(repository: widget.repository),
+      WeeklyReviewScreen(
+        repository: widget.repository,
+        onSwitchToCheckin: () => setState(() => _currentIndex = 0),
+      ),
       SettingsScreen(
         repository: widget.repository,
         settings: widget.settings,
